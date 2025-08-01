@@ -17,6 +17,20 @@ Directrices principales guardadas:
 
 4. Si se agregan nuevas directrices, deben registrarse aquí para consulta y cumplimiento futuro.
 
+5. Actualizaciones recientes:
+   - Se creó diversify.py para implementar la función build_portfolio esencial para el sistema
+   - Se añadió validation.py para mejorar la validación de entradas
+   - Se mejoró dashboard.py para mejor visualización
+   - Se actualizaron las pruebas en test_main.py
+   - Se actualizó main.py para usar los nuevos componentes
+
+6. Actualizaciones adicionales (2025-08-01):
+   - Se implementó security.py para gestión centralizada de seguridad y autenticación
+   - Se creó error_handling.py para manejo centralizado y estandarizado de errores
+   - Se añadió logger.py para logging avanzado y estructurado
+   - Se mejoró bridge.py con implementación completa del puente de inversión
+   - Se desarrolló api.py con API REST completa usando FastAPI
+
 Fecha de última actualización: 2025-08-01
 Autor: Jmoz1
 """

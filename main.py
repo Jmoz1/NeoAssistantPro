@@ -7,6 +7,7 @@ from diversify import build_portfolio
 from currency import convert_currency
 from scraper import fetch_dividend_data, fetch_all_market_data
 from ai_predictor import calcular_probabilidad_ganancia
+from validation import validate_investment_params, validate_autoinversion_params
 
 # Configuración de logging
 logging.basicConfig(
@@ -23,6 +24,13 @@ def gestionar_inversion_dividendos_mensuales(
     Gestiona una inversión enfocada en dividendos mensuales.
     """
     logging.info(f"Gestionando inversión de {capital} {moneda} con enfoque en dividendos mensuales...")
+    
+    # Validación de parámetros
+    valid, error_msg = validate_investment_params(capital, moneda, preferencias)
+    if not valid:
+        logging.error(f"Error de validación: {error_msg}")
+        return {"error": error_msg}
+        
     try:
         activos = fetch_dividend_data()
         if preferencias:
@@ -36,7 +44,7 @@ def gestionar_inversion_dividendos_mensuales(
         return cartera
     except Exception as e:
         logging.error(f"Error en la gestión de inversión: {e}")
-        return {}
+        return {"error": str(e)}
 
 def autoinversion_ia_global(
     capital: float,
@@ -50,6 +58,20 @@ def autoinversion_ia_global(
     Autoinversión con IA avanzada.
     """
     logging.info(f"IA avanzada gestionando autoinversión en todos los mercados...")
+    
+    # Validación de parámetros
+    valid_inv, error_inv = validate_investment_params(capital, moneda, preferencias_avanzadas)
+    if not valid_inv:
+        logging.error(f"Error de validación: {error_inv}")
+        return {"error": error_inv}
+        
+    valid_auto, error_auto = validate_autoinversion_params(
+        perfil_riesgo, porcentaje_ganancia_reventa, tolerancia_perdida
+    )
+    if not valid_auto:
+        logging.error(f"Error de validación: {error_auto}")
+        return {"error": error_auto}
+    
     try:
         activos = fetch_all_market_data()
         for activo in activos:
@@ -88,7 +110,7 @@ def autoinversion_ia_global(
         return resultado
     except Exception as e:
         logging.error(f"Error en autoinversión IA: {e}")
-        return {}
+        return {"error": str(e)}
 
 def puente_autoinversion_a_dividendos(
     capital_minimo_activacion: float,
@@ -100,29 +122,50 @@ def puente_autoinversion_a_dividendos(
     Puente entre autoinversión IA y gestión de dividendos mensuales.
     """
     logging.info("Monitorizando autoinversión IA para puente a dividendos mensuales...")
-    resultado_ia = autoinversion_ia_global(**args_autoinversion)
-    capital_generado = sum(
-        mov.get("ganancia", 0)
-        for mov in resultado_ia.get("movimientos", [])
-        if mov["accion"] == "reventa_ganancia"
-    )
-    logging.info(f"Capital generado por IA: {capital_generado}")
-    if capital_generado >= capital_minimo_activacion and capital_generado >= capital_objetivo:
-        logging.info("Capital objetivo alcanzado. Moviendo a gestión de dividendos mensuales...")
-        args_dividendos_actualizado = args_dividendos.copy()
-        args_dividendos_actualizado["capital"] = capital_generado
-        resultado_dividendos = gestionar_inversion_dividendos_mensuales(**args_dividendos_actualizado)
-        return {
-            "capital_movilizado": capital_generado,
-            "resultado_dividendos": resultado_dividendos,
-            "mensaje": "Capital transferido y reinvertido en dividendos mensuales."
-        }
-    else:
-        return {
-            "capital_movilizado": 0,
-            "resultado_dividendos": None,
-            "mensaje": "Capital generado insuficiente para transferencia."
-        }
+    
+    # Validación básica
+    valid, error_msg = validate_investment_params(capital_minimo_activacion)
+    if not valid:
+        logging.error(f"Error de validación en capital mínimo: {error_msg}")
+        return {"error": error_msg}
+        
+    valid, error_msg = validate_investment_params(capital_objetivo)
+    if not valid:
+        logging.error(f"Error de validación en capital objetivo: {error_msg}")
+        return {"error": error_msg}
+    
+    try:
+        resultado_ia = autoinversion_ia_global(**args_autoinversion)
+        
+        # Verificar si hubo error en la autoinversión
+        if "error" in resultado_ia:
+            return {"error": f"Error en autoinversión: {resultado_ia['error']}"}
+            
+        capital_generado = sum(
+            mov.get("ganancia", 0)
+            for mov in resultado_ia.get("movimientos", [])
+            if mov["accion"] == "reventa_ganancia"
+        )
+        logging.info(f"Capital generado por IA: {capital_generado}")
+        if capital_generado >= capital_minimo_activacion and capital_generado >= capital_objetivo:
+            logging.info("Capital objetivo alcanzado. Moviendo a gestión de dividendos mensuales...")
+            args_dividendos_actualizado = args_dividendos.copy()
+            args_dividendos_actualizado["capital"] = capital_generado
+            resultado_dividendos = gestionar_inversion_dividendos_mensuales(**args_dividendos_actualizado)
+            return {
+                "capital_movilizado": capital_generado,
+                "resultado_dividendos": resultado_dividendos,
+                "mensaje": "Capital transferido y reinvertido en dividendos mensuales."
+            }
+        else:
+            return {
+                "capital_movilizado": 0,
+                "resultado_dividendos": None,
+                "mensaje": "Capital generado insuficiente para transferencia."
+            }
+    except Exception as e:
+        logging.error(f"Error en puente autoinversión a dividendos: {e}")
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     logging.info("Neoproyectto: Centro de gestión de inversiones inteligentes")
